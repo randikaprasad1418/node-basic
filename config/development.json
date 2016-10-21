@@ -1,0 +1,35 @@
+{
+  "application" : {
+    "VERSION" : "0.1v",
+    "APP_NAME" : "App Name",
+    "PORT" : "3000",
+    "HOST" : "0.0.0.0",
+    "DATABASE_NAME": "db name",
+    "DATABASE_HOST":"localhost",
+    "DATABASE_PORT":"27017",
+    "DATABASE_USERNAME" : "",
+    "DATABASE_PASSWORD" : "",
+    "FILES" : {
+      "NO_OF_FILES": 10,
+      "FILE_SIZE": 700000000,
+      "SERVER" : "MONGO" // "AWSS3"
+    },
+    "BASE_URL":"http://192.168.1.20:3000/api/v1"
+  },
+  "secret" : {
+    "KEY" : "secretkeyfortokengenerator"
+  },
+  "facebookAuth" : {
+    "CLIENT_ID"      : "1583913575246794", // your App ID
+    "CLIENT_SECRET"  : "2e3d8eb956dd1435a303bb984ec3859d", // your App Secret
+    "CALLBACK_URL"   : "http://192.168.1.60:3000/api/v1/auth/facebook/callback"
+  },
+  "googleAuth" : {
+    "CLIENT_ID"       : "868809398391-m08tf53ggtgr2fdpjpvp4l728pi6qb3q.apps.googleusercontent.com",
+    "CLIENT_SECRET"   : "4hX6l-TT32ZRF6brwbjyFrbq",
+    "CALLBACK_URL"    : "http://localhost:3000/api/v1/auth/google/callback"
+  },
+  "client" : {
+    "BASE_URL" : "http://localhost:4200"
+  }
+}

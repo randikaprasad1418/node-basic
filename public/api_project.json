@@ -1,0 +1,1 @@
+{  "name": "School App",  "version": "0.1.0",  "description": "Scholarship application",  "title": "Custom apiDoc browser title",  "url": "http://192.168.1.60:3000/api/v1",  "sampleUrl": false,  "apidoc": "0.2.0",  "generator": {    "name": "apidoc",    "time": "2016-10-07T08:34:19.836Z",    "url": "http://apidocjs.com",    "version": "0.16.1"  }}
