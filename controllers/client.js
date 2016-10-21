@@ -1,6 +1,6 @@
 // Load required packages
 var Client = require('../models').Client;
-
+var HttpStatus = require('http-status-codes');
 // Create endpoint /api/client for POST
 exports.postClients = function(req, res) {
     // Create a new instance of the Client model
@@ -14,10 +14,11 @@ exports.postClients = function(req, res) {
 
     // Save the client and check for errors
     client.save(function(err) {
-        if (err)
-            res.send(err);
+        if (err){
+            res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({error: HttpStatus.getStatusText(HttpStatus.INTERNAL_SERVER_ERROR)});
+        }
 
-        res.json({ message: 'Client added to the locker!', data: client });
+        res.status(HttpStatus.OK).json({ message: HttpStatus.getStatusText(HttpStatus.OK), data: client });
     });
 };
 
@@ -25,9 +26,10 @@ exports.postClients = function(req, res) {
 exports.getClients = function(req, res) {
     // Use the Client model to find all clients
     Client.find({ userId: req.user._id }, function(err, clients) {
-        if (err)
-            res.send(err);
+        if (err){
+            res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({error: HttpStatus.getStatusText(HttpStatus.INTERNAL_SERVER_ERROR)});
+        }
 
-        res.json(clients);
+        res.status(HttpStatus.OK).json(clients);
     });
 };

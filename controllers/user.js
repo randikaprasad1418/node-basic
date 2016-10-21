@@ -1,33 +1,40 @@
 // Load required packages
 var Model = require('../models');
+var config = require('config').application;
+var Promise = require('bluebird');
+var HttpStatus = require('http-status-codes');
 
 module.exports = {
     postUsers : function(req, res) {
-        console.log(req.body);
-        var user = new Model.User(req.body);
-
-        user.save(function(err) {
-            // if (err)
-            //     res.send(err);
-
-            res.json({ message: 'User registered !' });
-        });
-    },
-
-    getUsers : function (req, res) {
-        console.log(req.params);
-        Model.User.find(function(err, users) {
-            if (err)
-                res.send(err);
-            res.json(users);
-        });
-    },
-
-    getUserById : function (req, res) {
-        Model.User.find({_id: req.params.id})
-        .select('-password -__v')
-        .exec(function (err, user) {
-           res.json(user);
-        });
+        if(req.body.role == 'ADMIN'){
+            if(req.body.secret && req.body.secret === config.API_SECRET){
+                registerUser(req.body).then(function(_response){
+                    res.status(HttpStatus.OK).json(_response);
+                }, function(_err){
+                    res.status(HttpStatus.UNAUTHORIZED).json({error: _err.errmsg});
+                });
+            }else{
+                res.status(HttpStatus.UNAUTHORIZED).json({error: HttpStatus.getStatusText(HttpStatus.UNAUTHORIZED)});
+            }
+        }else{
+            req.body.role = config.USER_ROLES.USER;
+            registerUser(req.body).then(function(_response){
+                res.status(HttpStatus.OK).json(_response);
+            }, function(_err){
+                res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({error: _err.errmsg});
+            });
+        }
     }
 };
+
+function registerUser(_dataObj){
+    return new Promise(function(_resolve, _reject){
+        var user = new Model.User(_dataObj);
+        user.save(function(err) {
+            if (err)
+               _reject(err);
+
+            _resolve({ message: 'User registered !' });
+        });
+    });
+}

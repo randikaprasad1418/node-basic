@@ -3,6 +3,7 @@ var Busboy = require('busboy');
 var mongoose = require('mongoose');
 var appConfig = require('config').application;
 var fileConfig = appConfig.FILES;
+const im = require('imagemagick-stream');
 
 module.exports = {
     addFile : function(req, res){
@@ -11,7 +12,6 @@ module.exports = {
         var fileId = mongoose.Types.ObjectId();
 
         busboy.on('file', function(fieldname, file, filename, encoding, mimetype) {
-            console.log('got file', filename, mimetype, encoding);
             var writeStream = gfs.createWriteStream({
                 _id: fileId,
                 filename: filename,
@@ -21,7 +21,7 @@ module.exports = {
             });
             file.pipe(writeStream);
         }).on('finish', function() {
-            res.status(200).json({success: true, resUrl: appConfig.BASE_URL+"/file/"+fileId});
+            res.status(HttpStatus.OK).json({ message: HttpStatus.getStatusText(HttpStatus.OK) , resUrl: appConfig.BASE_URL+"/file/"+fileId});
         });
         req.pipe(busboy);
     },
@@ -40,7 +40,8 @@ module.exports = {
             }
             res.set('Content-Type', 'image/png');
             // We only get here if the file actually exists, so pipe it to the response
-            gfs.createReadStream({ _id: req.params.id }).pipe(res);
+            
+            gfs.createReadStream({ _id: req.params.id }).pipe(im().resize(req.query.q)).pipe(res);
         });
     }
 }

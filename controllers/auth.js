@@ -1,7 +1,9 @@
 // Load required packages
 const jwt = require('jsonwebtoken');
+var HttpStatus = require('http-status-codes');
 const expressJwt = require('express-jwt');
 var config = require('config');
+var appConfig = config.application;
 var passport = require('passport');
 var BasicStrategy = require('passport-http').BasicStrategy;
 var BearerStrategy = require('passport-http-bearer').Strategy;
@@ -41,7 +43,7 @@ passport.use(new FacebookStrategy({
     clientID        : config.facebookAuth.CLIENT_ID,
     clientSecret    : config.facebookAuth.CLIENT_SECRET,
     callbackURL     : config.facebookAuth.CALLBACK_URL,
-    profileFields   : ['id', 'displayName', 'photos', 'email']
+    profileFields   : config.facebookAuth.SCOPES
 }, function(token, refreshToken, profile, done) {
     process.nextTick(function() {
         // Prepare user information
@@ -218,7 +220,7 @@ exports.generateAndSendToken = function (req, res) {
         if(req.authenticationType == 'FACEBOOK' || req.authenticationType == 'GOOGLE'){
             res.redirect(config.client.BASE_URL+'/login?token='+token);
         }else{
-            res.status(200).json({
+            res.status(HttpStatus.OK).json({
                 user: {
                     _id : req.user._id,
                     username : req.user.username
@@ -227,7 +229,7 @@ exports.generateAndSendToken = function (req, res) {
             });
         }
     }else{
-        res.status(401).json({message : 'Unauthorized', success: false});
+        res.status(HttpStatus.UNAUTHORIZED).json({message : HttpStatus.getStatusText(HttpStatus.UNAUTHORIZED)});
     }
 };
 
@@ -254,14 +256,29 @@ exports.isClientAuthenticated = passport.authenticate('client-basic', { session 
 exports.isBearerAuthenticated = passport.authenticate('bearer', { session: false });
 exports.authenticateByFb = passport.authenticate('facebook', { scope : 'email' });
 exports.setFbAuthenticatedUser = passport.authenticate('facebook', { failureRedirect : '/' });
-exports.authenticateByGoogle = passport.authenticate('google', { scope:[ 'https://www.googleapis.com/auth/plus.login', 'https://www.googleapis.com/auth/plus.profile.emails.read' ] });
+exports.authenticateByGoogle = passport.authenticate('google', { scope: config.googleAuth.SCOPES });
 exports.setGoogleAuthenticatedUser = passport.authenticate('google', { failureRedirect: '/' });
 
 exports.hasAdminPermission = function (req, res, next) {
-    
+    Model.User.findById(req.user.id)
+    .select('role')
+    .exec(function(_err, _response){
+        if(_err){
+            res.status(HttpStatus.UNAUTHORIZED).json({message : HttpStatus.getStatusText(HttpStatus.UNAUTHORIZED)});
+        }else if(_response.role == appConfig.USER_ROLES.ADMIN){
+            next();
+        }else{
+            res.status(HttpStatus.UNAUTHORIZED).json({message : HttpStatus.getStatusText(HttpStatus.UNAUTHORIZED)});
+        }
+    });
 };
 
 exports.isUserHasPermission = function(req, res, next){
-    console.log(req.user);
+    
     next();
 };
+
+exports.isLicenValied = function(req, res, next){
+    
+    next();
+}
