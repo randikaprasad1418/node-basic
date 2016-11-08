@@ -1,6 +1,6 @@
 # NodeJs sample application
 
-## Features
+## Features and application flow
 
 1. Basic structure of nodejs application
   1. Define routes 
