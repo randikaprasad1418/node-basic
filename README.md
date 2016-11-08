@@ -2,12 +2,14 @@
 
 ## Features
 
-1. Make my changes
-  1. Fix bug
-  2. Improve formatting
-    * Make the headings bigger
-2. Push my commits to GitHub
-3. Open a pull request
-  * Describe my changes
-  * Mention all the members of my team
-    * Ask for feedback
+1. Basic structure of nodejs application
+  1. Define routes 
+  2. Define models
+  3. Define controllers
+  3. Define middlewares
+  3. Define services
+2. Database connection
+3. Authentication types
+  * FB authentication
+  * Google authentication
+  * Jwt authentication
