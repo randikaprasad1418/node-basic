@@ -16,6 +16,7 @@ models.forEach(function(model) {
 });
 
 conn.once('open', function(){
+    console.log('Mongo connection is opened');
     module.exports.Gfs = Grid(conn.db);
 });
 

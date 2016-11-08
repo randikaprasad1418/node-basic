@@ -1,30 +1,32 @@
 // Load required packages
-var oauth2orize = require('oauth2orize');
-var User = require('../models/user');
-var Client = require('../models').Client;
-var Token = require('../models').Token;
-var Code = require('../models').Code;
+let oauth2orize = require('oauth2orize');
+let User = require('../models/user');
+let Model = require('../models');
+let Client = Model.Client;
+let Token = Model.Token;
+let Code = Model.Code;
+let appConfig = require('config').application;
 
 // Create OAuth 2.0 server
-var server = oauth2orize.createServer();
+let server = oauth2orize.createServer();
 
 // Register serialialization function
-server.serializeClient(function(client, callback) {
+server.serializeClient((client, callback) => {
     return callback(null, client._id);
 });
 
 // Register deserialization function
-server.deserializeClient(function(id, callback) {
-    Client.findOne({ _id: id }, function (err, client) {
+server.deserializeClient((id, callback) => {
+    Client.findOne({ _id: id },(err, client) => {
         if (err) { return callback(err); }
         return callback(null, client);
     });
 });
 
 // Register authorization code grant type
-server.grant(oauth2orize.grant.code(function(client, redirectUri, user, ares, callback) {
+server.grant(oauth2orize.grant.code((client, redirectUri, user, ares, callback) => {
     // Create a new authorization code
-    var code = new Code({
+    let code = new Code({
         value: uid(16),
         clientId: client._id,
         redirectUri: redirectUri,
@@ -32,7 +34,7 @@ server.grant(oauth2orize.grant.code(function(client, redirectUri, user, ares, ca
     });
 
     // Save the auth code and check for errors
-    code.save(function(err) {
+    code.save((err) => {
         if (err) { return callback(err); }
 
         callback(null, code.value);
@@ -40,26 +42,26 @@ server.grant(oauth2orize.grant.code(function(client, redirectUri, user, ares, ca
 }));
 
 // Exchange authorization codes for access tokens
-server.exchange(oauth2orize.exchange.code(function(client, code, redirectUri, callback) {
-    Code.findOne({ value: code }, function (err, authCode) {
+server.exchange(oauth2orize.exchange.code((client, code, redirectUri, callback) => {
+    Code.findOne({ value: code },  (err, authCode) => {
         if (err) { return callback(err); }
         if (authCode === undefined) { return callback(null, false); }
         if (client._id.toString() !== authCode.clientId) { return callback(null, false); }
         if (redirectUri !== authCode.redirectUri) { return callback(null, false); }
 
         // Delete auth code now that it has been used
-        authCode.remove(function (err) {
+        authCode.remove( (err) => {
             if(err) { return callback(err); }
 
             // Create a new access token
-            var token = new Token({
+            let token = new Token({
                 value: uid(256),
                 clientId: authCode.clientId,
                 userId: authCode.userId
             });
 
             // Save the access token and check for errors
-            token.save(function (err) {
+            token.save( (err) => {
                 if (err) { return callback(err); }
 
                 callback(null, token);
@@ -70,15 +72,15 @@ server.exchange(oauth2orize.exchange.code(function(client, code, redirectUri, ca
 
 // User authorization endpoint
 exports.authorization = [
-    server.authorization(function(clientId, redirectUri, callback) {
+    server.authorization((clientId, redirectUri, callback) => {
 
-        Client.findOne({ id: clientId }, function (err, client) {
+        Client.findOne({ id: clientId },  (err, client) => {
             if (err) { return callback(err); }
 
             return callback(null, client, redirectUri);
         });
-    }),
-    function(req, res){
+    }),(req, res) => {
+        // For Testing
         res.render('dialog', { transactionID: req.oauth2.transactionID, user: req.user, client: req.oauth2.client });
     }
 ];
@@ -94,11 +96,10 @@ exports.token = [
     server.errorHandler()
 ];
 
-function uid (len) {
+let uid = (len) => {
     var buf = []
-        , chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+        , chars = appConfig.OAuth2.CHARS
         , charlen = chars.length;
-
     for (var i = 0; i < len; ++i) {
         buf.push(chars[getRandomInt(0, charlen - 1)]);
     }
@@ -106,6 +107,6 @@ function uid (len) {
     return buf.join('');
 };
 
-function getRandomInt(min, max) {
+let getRandomInt = (min, max) => {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }

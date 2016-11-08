@@ -1,25 +1,23 @@
 // Load required packages
 const jwt = require('jsonwebtoken');
-var HttpStatus = require('http-status-codes');
 const expressJwt = require('express-jwt');
-var config = require('config');
-var appConfig = config.application;
-var passport = require('passport');
-var BasicStrategy = require('passport-http').BasicStrategy;
-var BearerStrategy = require('passport-http-bearer').Strategy;
-var FacebookStrategy = require('passport-facebook').Strategy;
-var GoogleStrategy = require('passport-google-oauth20').Strategy;
-var localStrategy = require('passport-local');
+let HttpStatus = require('http-status-codes');
+let config = require('config');
+let appConfig = config.application;
+let passport = require('passport');
+let BasicStrategy = require('passport-http').BasicStrategy;
+let BearerStrategy = require('passport-http-bearer').Strategy;
+let FacebookStrategy = require('passport-facebook').Strategy;
+let GoogleStrategy = require('passport-google-oauth20').Strategy;
+let localStrategy = require('passport-local');
+let Model = require('../models');
+let Token = Model.Token;
+let User = Model.User;
+let Client = Model.Client;
 
-var Model = require('../models');
-var Token = Model.Token;
-var User = Model.User;
-var Client = Model.Client;
 
-
-passport.use(new localStrategy(
-    function(username, password, callback) {
-        User.findOne({ username: username }, function (err, user) {
+passport.use(new localStrategy((username, password, callback) => {
+        User.findOne({ username: username }, (err, user) => {
             if (err) { return callback(err); }
 
             // No user found with that username
@@ -44,8 +42,8 @@ passport.use(new FacebookStrategy({
     clientSecret    : config.facebookAuth.CLIENT_SECRET,
     callbackURL     : config.facebookAuth.CALLBACK_URL,
     profileFields   : config.facebookAuth.SCOPES
-}, function(token, refreshToken, profile, done) {
-    process.nextTick(function() {
+}, (token, refreshToken, profile, done) => {
+    process.nextTick(() => {
         // Prepare user information
         var queryConditions = [];
         if(profile.emails){
@@ -53,7 +51,7 @@ passport.use(new FacebookStrategy({
         }
         queryConditions.push({'facebook.id' : profile.id });
         // find the user in the database based on their facebook id
-        User.findOne({ $or : queryConditions }, function(err, user) {
+        User.findOne({ $or : queryConditions }, (err, user) => {
 
             // if there is an error, stop everything and return that
             // ie an error connecting to the database
@@ -69,7 +67,7 @@ passport.use(new FacebookStrategy({
                 return done(null, user); // user found, return that user
             } else {
                 // if there is no user found with that facebook id, create them
-                var newUser = new User();
+                let newUser = new User();
                 // set all of the facebook information in our user model
                 newUser.facebook.id    = profile.id; // set the users facebook id
                 newUser.facebook.token = token; // we will save the token that facebook provides to the user
@@ -79,9 +77,8 @@ passport.use(new FacebookStrategy({
                 newUser.firstname = profile.name.givenName;
                 newUser.lastname = profile.name.familyName;
                 newUser.username = profile.emails ? profile.emails[0].value : profile.id;
-                newUser.password = 'NOT_SET****_***';
                 // save our user to the database
-                newUser.save(function(err) {
+                newUser.save((err) => {
                     if (err)
                         throw err;
 
@@ -99,8 +96,7 @@ passport.use(new GoogleStrategy({
         clientID: config.googleAuth.CLIENT_ID,
         clientSecret: config.googleAuth.CLIENT_SECRET,
         callbackURL: config.googleAuth.CALLBACK_URL
-    },
-    function(accessToken, refreshToken, profile, done) {
+    },(accessToken, refreshToken, profile, done) => {
         // Prepare user information
         var queryConditions = [];
         if(profile.emails){
@@ -108,7 +104,7 @@ passport.use(new GoogleStrategy({
         }
         queryConditions.push({'google.id' : profile.id });
         // find the user in the database based on their facebook id
-        User.findOne({ 'google.id' : profile.id }, function(err, user) {
+        User.findOne({ 'google.id' : profile.id }, (err, user) => {
             // if there is an error, stop everything and return that
             // ie an error connecting to the database
             if (err)
@@ -124,7 +120,7 @@ passport.use(new GoogleStrategy({
                 return done(null, user); // user found, return that user
             } else {
                 // if there is no user found with that google id, create them
-                var newUser = new User();
+                let newUser = new User();
 
                 // console.log(profile);
                 // set all of the google information in our user model
@@ -136,9 +132,8 @@ passport.use(new GoogleStrategy({
                 newUser.lastname = profile.name.familyName;
                 newUser.google.image = profile.photos[0].value;
                 newUser.username = profile.emails[0].value;
-                newUser.password = 'NOT_SET****_***';
                 // save our user to the database
-                newUser.save(function(err) {
+                newUser.save((err) => {
                     if (err)
                         throw err;
 
@@ -151,16 +146,15 @@ passport.use(new GoogleStrategy({
     }
 ));
 
-passport.use(new BasicStrategy(
-    function(username, password, callback) {
-        User.findOne({ username: username }, function (err, user) {
+passport.use(new BasicStrategy((username, password, callback) => {
+        User.findOne({ username: username }, (err, user) => {
             if (err) { return callback(err); }
 
             // No user found with that username
             if (!user) { return callback(null, false); }
 
             // Make sure the password is correct
-            user.verifyPassword(password, function(err, isMatch) {
+            user.verifyPassword(password,(err, isMatch) => {
                 if (err) { return callback(err); }
 
                 // Password did not match
@@ -173,9 +167,8 @@ passport.use(new BasicStrategy(
     }
 ));
 
-passport.use('client-basic', new BasicStrategy(
-    function(username, password, callback) {
-        Client.findOne({ username: username }, function (err, client) {
+passport.use(appConfig.STRATEGIES.CLIENT_BASIC, new BasicStrategy((username, password, callback) => {
+        Client.findOne({ username: username },  (err, client) => {
             if (err) { return callback(err); }
 
             // No client found with that id or bad password
@@ -187,15 +180,14 @@ passport.use('client-basic', new BasicStrategy(
     }
 ));
 
-passport.use(new BearerStrategy(
-    function(accessToken, callback) {
-        Token.findOne({value: accessToken }, function (err, token) {
+passport.use(new BearerStrategy((accessToken, callback) => {
+        Token.findOne({value: accessToken }, (err, token) => {
             if (err) { return callback(err); }
 
             // No token found
             if (!token) { return callback(null, false); }
 
-            User.findOne({ _id: token.userId }, function (err, user) {
+            User.findOne({ _id: token.userId }, (err, user) => {
                 if (err) { return callback(err); }
 
                 // No user found
@@ -208,16 +200,17 @@ passport.use(new BearerStrategy(
     }
 ));
 
-exports.generateAndSendToken = function (req, res) {
+exports.generateAndSendToken = (req, res) => {
 
     var token = jwt.sign({
         id: req.user.id || req.user._id,
     }, config.secret.KEY, {
-        expiresIn: '120m'
+        expiresIn: config.secret.EXPIRE_TIME
     });
 
     if(req.user && token){
-        if(req.authenticationType == 'FACEBOOK' || req.authenticationType == 'GOOGLE'){
+        if(req.authenticationType == appConfig.AUTH_TYPES.FACEBOOK || req.authenticationType == appConfig.AUTH_TYPES.GOOGLE){
+            // This added for testing so it should changed.
             res.redirect(config.client.BASE_URL+'/login?token='+token);
         }else{
             res.status(HttpStatus.OK).json({
@@ -233,36 +226,25 @@ exports.generateAndSendToken = function (req, res) {
     }
 };
 
-exports.loadProfile = function (req, res) {
-    console.log(req);
+exports.loadProfile = (req, res) => {
+    // Only for testing 
     res.render('profile.ejs', {
         user : req.user
     });
 };
 
-passport.serializeUser(function(user, done) {
+passport.serializeUser((user, done) => {
     done(null, user);
 });
 
-passport.deserializeUser(function(user, done) {
+passport.deserializeUser((user, done) => {
     done(null, user);
 });
 
-
-exports.authenticateUser = passport.authenticate('local', { session: false });
-exports.isLocalAuthenticated = expressJwt({secret : config.secret.KEY});
-exports.isAuthenticated = passport.authenticate(['basic', 'bearer'], { session : false });
-exports.isClientAuthenticated = passport.authenticate('client-basic', { session : false });
-exports.isBearerAuthenticated = passport.authenticate('bearer', { session: false });
-exports.authenticateByFb = passport.authenticate('facebook', { scope : 'email' });
-exports.setFbAuthenticatedUser = passport.authenticate('facebook', { failureRedirect : '/' });
-exports.authenticateByGoogle = passport.authenticate('google', { scope: config.googleAuth.SCOPES });
-exports.setGoogleAuthenticatedUser = passport.authenticate('google', { failureRedirect: '/' });
-
-exports.hasAdminPermission = function (req, res, next) {
+exports.hasAdminPermission = (req, res, next) => {
     Model.User.findById(req.user.id)
     .select('role')
-    .exec(function(_err, _response){
+    .exec((_err, _response) => {
         if(_err){
             res.status(HttpStatus.UNAUTHORIZED).json({message : HttpStatus.getStatusText(HttpStatus.UNAUTHORIZED)});
         }else if(_response.role == appConfig.USER_ROLES.ADMIN){
@@ -273,12 +255,20 @@ exports.hasAdminPermission = function (req, res, next) {
     });
 };
 
-exports.isUserHasPermission = function(req, res, next){
-    
+exports.isUserHasPermission = (req, res, next) => {
     next();
 };
 
-exports.isLicenValied = function(req, res, next){
-    
+exports.isLicenValied = (req, res, next) =>{
     next();
 }
+
+exports.authenticateUser = passport.authenticate(appConfig.STRATEGIES.LOCAL, { session: false });
+exports.isLocalAuthenticated = expressJwt({secret : config.secret.KEY});
+exports.isAuthenticated = passport.authenticate([appConfig.STRATEGIES.BASIC, appConfig.STRATEGIES.BEARER], { session : false });
+exports.isClientAuthenticated = passport.authenticate(appConfig.STRATEGIES.CLIENT_BASIC, { session : false });
+exports.isBearerAuthenticated = passport.authenticate(appConfig.STRATEGIES.BEARER, { session: false });
+exports.authenticateByFb = passport.authenticate(appConfig.STRATEGIES.FACEBOOK, { scope: config.facebookAuth.SCOPES  }); //scope : 'email'
+exports.setFbAuthenticatedUser = passport.authenticate(appConfig.STRATEGIES.FACEBOOK, { failureRedirect : '/' });
+exports.authenticateByGoogle = passport.authenticate(appConfig.STRATEGIES.GOOGLE, { scope: config.googleAuth.SCOPES });
+exports.setGoogleAuthenticatedUser = passport.authenticate(appConfig.STRATEGIES.GOOGLE, { failureRedirect: '/' });
